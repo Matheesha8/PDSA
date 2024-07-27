@@ -1,0 +1,15 @@
+C:\Users\DELL\source\repos\PDSA\PDSA\bin\Debug\net6.0\PDSA.exe
+C:\Users\DELL\source\repos\PDSA\PDSA\bin\Debug\net6.0\PDSA.deps.json
+C:\Users\DELL\source\repos\PDSA\PDSA\bin\Debug\net6.0\PDSA.runtimeconfig.json
+C:\Users\DELL\source\repos\PDSA\PDSA\bin\Debug\net6.0\PDSA.dll
+C:\Users\DELL\source\repos\PDSA\PDSA\bin\Debug\net6.0\PDSA.pdb
+C:\Users\DELL\source\repos\PDSA\PDSA\obj\Debug\net6.0\PDSA.csproj.AssemblyReference.cache
+C:\Users\DELL\source\repos\PDSA\PDSA\obj\Debug\net6.0\PDSA.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\DELL\source\repos\PDSA\PDSA\obj\Debug\net6.0\PDSA.AssemblyInfoInputs.cache
+C:\Users\DELL\source\repos\PDSA\PDSA\obj\Debug\net6.0\PDSA.AssemblyInfo.cs
+C:\Users\DELL\source\repos\PDSA\PDSA\obj\Debug\net6.0\PDSA.csproj.CoreCompileInputs.cache
+C:\Users\DELL\source\repos\PDSA\PDSA\obj\Debug\net6.0\PDSA.dll
+C:\Users\DELL\source\repos\PDSA\PDSA\obj\Debug\net6.0\refint\PDSA.dll
+C:\Users\DELL\source\repos\PDSA\PDSA\obj\Debug\net6.0\PDSA.pdb
+C:\Users\DELL\source\repos\PDSA\PDSA\obj\Debug\net6.0\PDSA.genruntimeconfig.cache
+C:\Users\DELL\source\repos\PDSA\PDSA\obj\Debug\net6.0\ref\PDSA.dll
