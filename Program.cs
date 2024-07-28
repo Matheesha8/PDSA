@@ -21,7 +21,8 @@ namespace ZooManagementSystem
                 Console.WriteLine("6. Remove Animal");
                 Console.WriteLine("7. Search Animal");
                 Console.WriteLine("8. Update Animal");
-                Console.WriteLine("9. Exit");
+                Console.WriteLine("9. View Recent Changes");
+                Console.WriteLine("10. Exit");
                 Console.Write("Select an option: ");
 
                 string input = Console.ReadLine();
@@ -53,6 +54,9 @@ namespace ZooManagementSystem
                         UpdateAnimal(zoo);
                         break;
                     case "9":
+                        ViewRecentChanges(zoo);
+                        break;
+                    case "10":
                         running = false;
                         break;
                     default:
@@ -82,10 +86,10 @@ namespace ZooManagementSystem
 
         static void RemoveAnimal(Zoo zoo)
         {
-            Console.Write("Enter the name of the animal to remove: ");
-            string name = Console.ReadLine();
+            Console.Write("Enter the ID of the animal to remove: ");
+            int id = int.Parse(Console.ReadLine());
 
-            bool removed = zoo.RemoveAnimal(name);
+            bool removed = zoo.RemoveAnimal(id);
             if (removed)
             {
                 Console.WriteLine("Animal removed successfully.");
@@ -101,10 +105,14 @@ namespace ZooManagementSystem
             Console.Write("Enter the name of the animal to search: ");
             string name = Console.ReadLine();
 
-            Animal animal = zoo.SearchAnimal(name);
-            if (animal != null)
+            List<Animal> animals = zoo.SearchAnimal(name);
+            if (animals.Count > 0)
             {
-                Console.WriteLine("Animal found: " + animal);
+                Console.WriteLine("Animals found:");
+                foreach (var animal in animals)
+                {
+                    Console.WriteLine(animal);
+                }
             }
             else
             {
@@ -114,10 +122,10 @@ namespace ZooManagementSystem
 
         static void UpdateAnimal(Zoo zoo)
         {
-            Console.Write("Enter the name of the animal to update: ");
-            string name = Console.ReadLine();
+            Console.Write("Enter the ID of the animal to update: ");
+            int id = int.Parse(Console.ReadLine());
 
-            Animal animal = zoo.SearchAnimal(name);
+            Animal animal = zoo.SearchAnimalById(id);
             if (animal != null)
             {
                 Console.Write("Enter new color (leave blank to keep current): ");
@@ -132,6 +140,7 @@ namespace ZooManagementSystem
                 string weight = Console.ReadLine();
                 if (!string.IsNullOrWhiteSpace(weight)) animal.Weight = weight;
 
+                zoo.UpdateAnimal(animal);
                 Console.WriteLine("Animal details updated successfully.");
             }
             else
@@ -139,10 +148,16 @@ namespace ZooManagementSystem
                 Console.WriteLine("Animal not found.");
             }
         }
+
+        static void ViewRecentChanges(Zoo zoo)
+        {
+            zoo.ViewRecentChanges();
+        }
     }
 
     class Animal
     {
+        public int ID { get; set; }
         public string Name { get; set; }
         public string Color { get; set; }
         public string Size { get; set; }
@@ -158,7 +173,7 @@ namespace ZooManagementSystem
 
         public override string ToString()
         {
-            return $"Name: {Name}, Color: {Color}, Size: {Size}, Weight: {Weight}";
+            return $"ID: {ID}, Name: {Name}, Color: {Color}, Size: {Size}, Weight: {Weight}";
         }
     }
 
@@ -166,45 +181,63 @@ namespace ZooManagementSystem
     {
         private LinkedList<Animal> animals;
         private AVLTree<Animal> animalTree;
+        private Stack<string> recentChanges;
+        private int nextId;
+        private Dictionary<int, Animal> animalMap;
 
         public Zoo()
         {
             animals = new LinkedList<Animal>();
             animalTree = new AVLTree<Animal>((a1, a2) => a1.Name.CompareTo(a2.Name));
+            recentChanges = new Stack<string>();
+            nextId = 1;
+            animalMap = new Dictionary<int, Animal>();
         }
 
         public void AddAnimal(Animal animal)
         {
+            animal.ID = nextId++;
             animals.AddLast(animal);
             animalTree.Insert(animal);
+            animalMap[animal.ID] = animal;
+            recentChanges.Push($"Added: {animal}");
         }
 
-        public bool RemoveAnimal(string name)
+        public bool RemoveAnimal(int id)
         {
-            var node = animals.First;
-            while (node != null)
+            if (animalMap.TryGetValue(id, out var animal))
             {
-                if (node.Value.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
-                {
-                    animals.Remove(node);
-                    animalTree.Remove(node.Value);
-                    return true;
-                }
-                node = node.Next;
+                animals.Remove(animal);
+                animalTree.Remove(animal);
+                animalMap.Remove(id);
+                recentChanges.Push($"Removed: {animal}");
+                return true;
             }
             return false;
         }
 
-        public Animal SearchAnimal(string name)
+        public List<Animal> SearchAnimal(string name)
         {
+            var result = new List<Animal>();
             foreach (var animal in animals)
             {
                 if (animal.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
                 {
-                    return animal;
+                    result.Add(animal);
                 }
             }
-            return null;
+            return result;
+        }
+
+        public Animal SearchAnimalById(int id)
+        {
+            animalMap.TryGetValue(id, out var animal);
+            return animal;
+        }
+
+        public void UpdateAnimal(Animal animal)
+        {
+            recentChanges.Push($"Updated: {animal}");
         }
 
         public void ListAnimals(string sortBy)
@@ -240,6 +273,21 @@ namespace ZooManagementSystem
             foreach (var animal in sortedAnimals)
             {
                 Console.WriteLine(animal);
+            }
+        }
+
+        public void ViewRecentChanges()
+        {
+            if (recentChanges.Count == 0)
+            {
+                Console.WriteLine("No recent changes.");
+                return;
+            }
+
+            Console.WriteLine("Recent changes:");
+            foreach (var change in recentChanges)
+            {
+                Console.WriteLine(change);
             }
         }
     }
@@ -310,70 +358,81 @@ namespace ZooManagementSystem
                 if (node.Left == null) return node.Right;
                 if (node.Right == null) return node.Left;
 
-                Node temp = node;
-                node = Min(temp.Right);
-                node.Right = RemoveMin(temp.Right);
-                node.Left = temp.Left;
+                Node temp = GetMin(node.Right);
+                node.Value = temp.Value;
+                node.Right = Remove(node.Right, temp.Value);
             }
 
             node.Height = 1 + Math.Max(GetHeight(node.Left), GetHeight(node.Right));
+
             return Balance(node);
+        }
+
+        private Node GetMin(Node node)
+        {
+            while (node.Left != null)
+                node = node.Left;
+            return node;
+        }
+
+        private int GetHeight(Node node)
+        {
+            return node?.Height ?? 0;
+        }
+
+        private int GetBalance(Node node)
+        {
+            return GetHeight(node.Left) - GetHeight(node.Right);
         }
 
         private Node Balance(Node node)
         {
             int balance = GetBalance(node);
+
             if (balance > 1)
             {
                 if (GetBalance(node.Left) < 0)
                     node.Left = RotateLeft(node.Left);
-                return RotateRight(node);
+
+                node = RotateRight(node);
             }
-            if (balance < -1)
+            else if (balance < -1)
             {
                 if (GetBalance(node.Right) > 0)
                     node.Right = RotateRight(node.Right);
-                return RotateLeft(node);
+
+                node = RotateLeft(node);
             }
+
             return node;
         }
 
-        private Node RotateLeft(Node node)
+        private Node RotateRight(Node y)
         {
-            Node newRoot = node.Right;
-            node.Right = newRoot.Left;
-            newRoot.Left = node;
-            node.Height = 1 + Math.Max(GetHeight(node.Left), GetHeight(node.Right));
-            newRoot.Height = 1 + Math.Max(GetHeight(newRoot.Left), GetHeight(newRoot.Right));
-            return newRoot;
+            Node x = y.Left;
+            Node T2 = x.Right;
+
+            x.Right = y;
+            y.Left = T2;
+
+            y.Height = Math.Max(GetHeight(y.Left), GetHeight(y.Right)) + 1;
+            x.Height = Math.Max(GetHeight(x.Left), GetHeight(x.Right)) + 1;
+
+            return x;
         }
 
-        private Node RotateRight(Node node)
+        private Node RotateLeft(Node x)
         {
-            Node newRoot = node.Left;
-            node.Left = newRoot.Right;
-            newRoot.Right = node;
-            node.Height = 1 + Math.Max(GetHeight(node.Left), GetHeight(node.Right));
-            newRoot.Height = 1 + Math.Max(GetHeight(newRoot.Left), GetHeight(newRoot.Right));
-            return newRoot;
-        }
+            Node y = x.Right;
+            Node T2 = y.Left;
 
-        private Node Min(Node node)
-        {
-            while (node.Left != null) node = node.Left;
-            return node;
-        }
+            y.Left = x;
+            x.Right = T2;
 
-        private Node RemoveMin(Node node)
-        {
-            if (node.Left == null) return node.Right;
-            node.Left = RemoveMin(node.Left);
-            node.Height = 1 + Math.Max(GetHeight(node.Left), GetHeight(node.Right));
-            return Balance(node);
-        }
+            x.Height = Math.Max(GetHeight(x.Left), GetHeight(x.Right)) + 1;
+            y.Height = Math.Max(GetHeight(y.Left), GetHeight(y.Right)) + 1;
 
-        private int GetHeight(Node node) => node?.Height ?? 0;
-        private int GetBalance(Node node) => GetHeight(node.Left) - GetHeight(node.Right);
+            return y;
+        }
     }
 }
--
